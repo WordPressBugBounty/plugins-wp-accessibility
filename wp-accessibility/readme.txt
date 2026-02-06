@@ -3,9 +3,9 @@ Contributors: joedolson
 Donate link: https://www.joedolson.com/donate/
 Tags: accessibility, wcag, a11y, section508, alt text
 Requires at least: 5.9
-Tested up to: 6.8
+Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 2.2.5
+Stable tag: 2.3.1
 Text Domain: wp-accessibility
 License: GPLv3
 
@@ -81,6 +81,22 @@ WP Accessibility includes a statistics collection feature to help you identify h
 = Future =
 
 [Suggest a change!](https://github.com/joedolson/wp-accessibility/issues/)
+
+= 2.3.1 =
+
+* Bug fix: Fixes broken longdesc scripting.
+
+= 2.3.0 =
+
+* Change: Split settings into three pages: features, admin, and remediation.
+* Change: Add settings to disable automatic labelling, viewport settings, lang attributes, and removal of title attributes.
+* Change: Remove PHP-based title attribute removals.
+* Change: Switch settings markup from lists to paragraphs.
+* Change: Add bulk disable to turn off all overlay features.
+
+= 2.2.6 =
+
+* Bug fix: Incorrect call to `.removeAttr` triggered catch condition on all URLs, throwing unnecessary console messages.
 
 = 2.2.5 =
 

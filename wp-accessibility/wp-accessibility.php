@@ -17,7 +17,7 @@
  * Domain Path: /lang
  * License:     GPL-2.0+
  * License URI: http://www.gnu.org/license/gpl-2.0.txt
- * Version: 2.2.5
+ * Version: 2.3.1
  */
 
 /*
@@ -45,12 +45,14 @@ require_once __DIR__ . '/wp-accessibility-longdesc.php';
 require_once __DIR__ . '/wp-accessibility-alt.php';
 require_once __DIR__ . '/wp-accessibility-contrast.php';
 require_once __DIR__ . '/wp-accessibility-settings.php';
+require_once __DIR__ . '/wp-accessibility-overlay.php';
+require_once __DIR__ . '/wp-accessibility-admin.php';
 require_once __DIR__ . '/wp-accessibility-help.php';
 if ( 'off' !== get_option( 'wpa_track_stats' ) ) {
 	require_once __DIR__ . '/wp-accessibility-stats.php';
 }
 
-define( 'WP_ACCESSIBILITY_VERSION', '2.2.5' );
+define( 'WP_ACCESSIBILITY_VERSION', '2.3.1' );
 
 register_activation_hook( __FILE__, 'wpa_install' );
 
@@ -80,8 +82,10 @@ add_action( 'admin_menu', 'wpa_admin_menu' );
  * Set up admin menu.
  */
 function wpa_admin_menu() {
-	add_menu_page( 'WP Accessibility', 'WP Accessibility', 'manage_options', 'wp-accessibility', 'wpa_admin_settings', 'dashicons-universal-access' );
-	add_submenu_page( 'wp-accessibility', 'WP Accessibility - Help', 'Get Help', 'manage_options', 'wp-accessibility-help', 'wpa_help_screen' );
+	add_menu_page( __( 'WP Accessibility - Features', 'wp-accessibility' ), __( 'WP Accessibility', 'wp-accessibility' ), 'manage_options', 'wp-accessibility', 'wpa_admin_settings', 'dashicons-universal-access' );
+	add_submenu_page( 'wp-accessibility', __( 'WP Accessibility - Fixes', 'wp-accessibility' ), __( 'Accessibility Fixes', 'wp-accessibility' ), 'manage_options', 'wp-accessibility-overlay', 'wpa_admin_overlay_settings' );
+	add_submenu_page( 'wp-accessibility', __( 'WP Accessibility - Admin & Testing', 'wp-accessibility' ), __( 'Testing & Admin', 'wp-accessibility' ), 'manage_options', 'wp-accessibility-admin', 'wpa_admin_admin_settings' );
+	add_submenu_page( 'wp-accessibility', __( 'WP Accessibility - Help', 'wp-accessibility' ), __( 'Get Help', 'wp-accessibility' ), 'manage_options', 'wp-accessibility-help', 'wpa_help_screen' );
 }
 
 /**
@@ -89,7 +93,6 @@ function wpa_admin_menu() {
  */
 function wpa_install() {
 	if ( 'true' !== get_option( 'wpa_installed' ) ) {
-		add_option( 'rta_from_tag_clouds', 'on' );
 		add_option( 'asl_styles_focus', '' );
 		add_option( 'asl_styles_passive', '' );
 		add_option( 'asl_default_styles', 'true' );
@@ -114,6 +117,9 @@ function wpa_install() {
 function wpa_check_version() {
 	// upgrade for version 1.3.0.
 	$version = WP_ACCESSIBILITY_VERSION;
+	if ( version_compare( $version, '2.3.0', '<' ) ) {
+		add_option( 'wpa_lang_attributes', 'on' );
+	}
 	if ( version_compare( $version, '1.3.0', '<' ) ) {
 		add_option( 'wpa_longdesc', 'button' );
 	}
@@ -396,8 +402,12 @@ function wpa_enqueue_js() {
 	 * @return {array}
 	 */
 	$labels = apply_filters( 'wpa_labels', $labels );
-	$dir    = ( is_rtl() ) ? 'rtl' : 'ltr';
-	$lang   = get_bloginfo( 'language' );
+	$dir    = '';
+	$lang   = '';
+	if ( 'off' !== get_option( 'wpa_lang_attributes' ) && ! wpa_accessible_theme() ) {
+		$dir  = ( is_rtl() ) ? 'rtl' : 'ltr';
+		$lang = get_bloginfo( 'language' );
+	}
 
 	if ( SCRIPT_DEBUG ) {
 		$wpajs = plugins_url( 'js/wp-accessibility.js', __FILE__ );
@@ -467,6 +477,7 @@ function wpa_enqueue_js() {
 	 * @return {bool}
 	 */
 	$tracking_enabled = apply_filters( 'wpa_track_view_statistics', $track );
+	$apply_labels     = ( 'off' === get_option( 'wpa_labels' ) ) ? false : true;
 	/**
 	 * Filter whether automatic labeling is enabled.
 	 *
@@ -476,7 +487,8 @@ function wpa_enqueue_js() {
 	 *
 	 * @return {bool}
 	 */
-	$apply_labels = apply_filters( 'wpa_disable_labels', true );
+	$apply_labels  = apply_filters( 'wpa_disable_labels', $apply_labels );
+	$remove_titles = ( 'off' === get_option( 'wpa_remove_titles' ) ) ? false : true;
 	/**
 	 * Filter whether title attributes are removed. Used to be image titles only, now applies buttons and links, as well.
 	 *
@@ -486,7 +498,18 @@ function wpa_enqueue_js() {
 	 *
 	 * @return {bool}
 	 */
-	$remove_titles = apply_filters( 'wpa_remove_titles', true );
+	$remove_titles = apply_filters( 'wpa_remove_titles', $remove_titles );
+	$set_viewport  = ( 'off' === get_option( 'wpa_viewport' ) ) ? false : true;
+	/**
+	 * Filter whether WP Accessibility manipulates the viewport.
+	 *
+	 * @hook wpa_viewport
+	 *
+	 * @param {bool} $enabled True viewport can be modified.
+	 *
+	 * @return {bool}
+	 */
+	$viewport = apply_filters( 'wpa_viewport', $set_viewport );
 	wp_localize_script(
 		'wp-accessibility',
 		'wpa',
@@ -503,6 +526,7 @@ function wpa_enqueue_js() {
 			),
 			'videos'      => ( 'on' === get_option( 'wpa_videos' ) ) ? true : false,
 			'dir'         => $dir,
+			'viewport'    => $viewport,
 			'lang'        => $lang,
 			'titles'      => $remove_titles,
 			'labels'      => $apply_labels,
@@ -524,7 +548,6 @@ function wpa_enqueue_js() {
 			'ldType'      => $longdesc_type,
 			'ldHome'      => home_url(),
 			'ldText'      => '<span class="dashicons dashicons-media-text" aria-hidden="true"></span><span class="screen-reader">' . __( 'Long Description', 'wp-accessibility' ) . '</span>',
-
 		)
 	);
 }
@@ -682,23 +705,6 @@ function wpa_custom_excerpt_more( $output ) {
 		global $id;
 		$output .= ' ' . wpa_continue_reading( $id ); // insert a blank space.
 	}
-
-	return $output;
-}
-
-if ( 'on' === get_option( 'rta_from_tag_clouds' ) ) {
-	add_filter( 'wp_tag_cloud', 'wpa_remove_title_attributes' );
-}
-
-/**
- * Strip title attributes from tag clouds.
- *
- * @param string $output Tag Cloud.
- *
- * @return string Tag cloud without title attributes.
- */
-function wpa_remove_title_attributes( $output ) {
-	$output = preg_replace( '/\s*title\s*=\s*(["\']).*?\1/', '', $output );
 
 	return $output;
 }
