@@ -17,7 +17,7 @@
  * Domain Path: /lang
  * License:     GPL-2.0+
  * License URI: http://www.gnu.org/license/gpl-2.0.txt
- * Version: 2.3.2
+ * Version: 2.3.3
  */
 
 /*
@@ -52,7 +52,7 @@ if ( 'off' !== get_option( 'wpa_track_stats' ) ) {
 	require_once __DIR__ . '/wp-accessibility-stats.php';
 }
 
-define( 'WP_ACCESSIBILITY_VERSION', '2.3.2' );
+define( 'WP_ACCESSIBILITY_VERSION', '2.3.3' );
 
 register_activation_hook( __FILE__, 'wpa_install' );
 
@@ -465,7 +465,7 @@ function wpa_enqueue_js() {
 	 * @return {bool}
 	 */
 	$errors_enabled = apply_filters( 'wpa_view_remediation_logs', current_user_can( 'manage_options' ) );
-	$track          = ( '' === get_option( 'wpa_track_stats' ) ) ? current_user_can( 'manage_options' ) : true;
+	$track          = ( '' === get_option( 'wpa_track_stats', '' ) ) ? current_user_can( 'manage_options' ) : true;
 	$track          = ( 'off' === get_option( 'wpa_track_stats' ) ) ? false : $track;
 	/**
 	 * Filter whether data from views will be tracked.
@@ -626,6 +626,15 @@ function wpa_filter( $query ) {
 			$query->query_vars['s'] = '&#32;';
 			$query->set( 'is_search', 1 );
 			add_action( 'template_include', 'wpa_search_error' );
+			add_filter(
+				'get_search_query',
+				function ( $search_query ) {
+					if ( '&#32;' === $search_query ) {
+						return '';
+					}
+					return $search_query;
+				}
+			);
 		}
 	}
 
