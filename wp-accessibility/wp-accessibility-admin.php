@@ -5,7 +5,7 @@
  * @category Settings
  * @package  WP Accessibility
  * @author   Joe Dolson
- * @license  GPLv3
+ * @license  GPLv2
  * @link     https://www.joedolson.com/wp-accessibility/
  */
 
@@ -138,9 +138,10 @@ function wpa_admin_admin_settings() {
 									$hex1          = esc_attr( $colors['hex1'] );
 									$hex2          = esc_attr( $colors['hex2'] );
 								} else {
-									$hex1       = '';
-									$hex2       = '';
-									$l_contrast = false;
+									$hex1          = '';
+									$hex2          = '';
+									$l_contrast    = false;
+									$luminance_raw = 0;
 								}
 								if ( $l_contrast ) {
 									$results = "<div class='notice notice-info'>";
