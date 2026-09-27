@@ -862,6 +862,95 @@
 			}
 		}
 	}
+
+	// Listen for the font size change event.
+	document.addEventListener( 'wpa_fontsize_changed', function(e) {
+		fontSizeModify( e.detail.change, e.detail.factor );
+	} );
+	/**
+	 * Modifies the font size of text nodes within the document body.
+	 *
+	 * @param {string} change increase or reset.
+	 * @param {float} factor The factor by which to increase the font size.
+	 */
+	function fontSizeModify( change = 'increase', factor = 1.6 ) {
+		const adminBar = document.getElementById( 'wpadminbar' );
+		const toolBar = document.querySelector( '.a11y-toolbar' );
+
+		const ancestorResized = (el) => {
+			while (el) {
+				// Don't resize text inside other already resized elements or in the adminbar.
+				if ( el.hasAttribute( 'data-wpa-resized' ) ) {
+					return true;
+				}
+				el = el.parentElement; // Moves up to the next parent
+			}
+			return false;
+		};
+
+		const resizeElement = (el) => {
+			// Extract the computed, rendered font-size.
+			const computedStyle = window.getComputedStyle( el );
+			const fontSize = computedStyle.getPropertyValue( 'font-size' ).replace( 'px', '' );
+			const cssString = 'font-size: ' + ( parseFloat(fontSize) * factor ) + 'px !important';
+			if ( ! ancestorResized( el ) && 'increase' === change ) {
+				let inlineFontSize = el.style.fontSize;
+				// if element has a font-size set inline, store it in the data-wpa-resized attribute.
+				if ( inlineFontSize ) {
+					el.setAttribute( 'data-wpa-resized', inlineFontSize );
+				} else {
+					el.setAttribute( 'data-wpa-resized', 'true' );
+				}
+				el.style.cssText += cssString;
+			}
+			if ( change === 'reset' ) {
+				el.style.removeProperty( 'font-size' );
+				// Restore the inline font-size if it was stored by the script.
+				if ( el.hasAttribute( 'data-wpa-resized' ) && el.getAttribute( 'data-wpa-resized' ) !== 'true' ) {
+					el.style.fontSize = el.getAttribute( 'data-wpa-resized' );
+				}
+				el.removeAttribute( 'data-wpa-resized' );
+			}
+		};
+
+		const walker = document.createTreeWalker(
+			document.body,
+			NodeFilter.SHOW_TEXT,
+			{
+				acceptNode: function(node) {
+					// Ignore scripts, styles, nodes with only whitespace, and the adminbar.
+					const parentTag = node.parentElement ? node.parentElement.tagName : '';
+					if (['SCRIPT', 'STYLE', 'NOSCRIPT', 'SVG'].includes( parentTag ) || adminBar.contains(node) || toolBar.contains(node) ) {
+						return NodeFilter.FILTER_REJECT;
+					}
+					return node.textContent.trim().length > 0 || node.nodeType === Node.ELEMENT_NODE ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+				}
+			}
+		);
+
+		const seenElements = new Set();
+		// 2. Iterate through the text nodes
+		while ( walker.nextNode() ) {
+			const textNode = walker.currentNode;
+			const parentElement = textNode.parentElement;
+
+			// Prevent checking the same element multiple times
+			if ( parentElement && ! seenElements.has( parentElement ) ) {
+				seenElements.add( parentElement );
+				resizeElement( parentElement );
+			}
+		}
+
+		// Form controls (e.g. input) may have no text node children, so they need to be handled separately.
+		const formElements = document.body.querySelectorAll( 'input, select, textarea' );
+		formElements.forEach( (el) => {
+			if ( adminBar.contains( el ) || toolBar.contains( el ) || seenElements.has( el ) ) {
+				return;
+			}
+			seenElements.add( el );
+			resizeElement( el );
+		});
+	}
 })();
 
 /**

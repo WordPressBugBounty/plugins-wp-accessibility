@@ -17,7 +17,7 @@
  * Domain Path: /lang
  * License:     GPL-2.0+
  * License URI: http://www.gnu.org/license/gpl-2.0.txt
- * Version: 2.3.5
+ * Version: 2.4.0
  */
 
 /*
@@ -52,15 +52,32 @@ if ( 'off' !== get_option( 'wpa_track_stats' ) ) {
 	require_once __DIR__ . '/wp-accessibility-stats.php';
 }
 
-define( 'WP_ACCESSIBILITY_VERSION', '2.3.5' );
+define( 'WP_ACCESSIBILITY_VERSION', '2.4.0' );
 
 register_activation_hook( __FILE__, 'wpa_install' );
 
-add_action( 'admin_notices', 'wpa_status_notice', 10 );
+function wpa_admin_init() {
+	// Handle dismiss actions for the WP Accessibility Day promo.
+	if ( isset( $_GET['action'] ) && 'wpa_dismiss_once' === $_GET['action'] ) {
+		// The transient will expire after 3 weeks, allowing the promo to be shown again next year.
+		set_transient( 'wpa11yday_dismissed', true, 3 * WEEK_IN_SECONDS );
+		wp_redirect( admin_url( 'admin.php?page=wp-accessibility' ) );
+		exit;
+	}
+	if ( isset( $_GET['action'] ) && 'wpa_dismiss_permanently' === $_GET['action'] ) {
+		update_option( 'wpa11yday_dismissed', true );
+		delete_transient( 'wpa11yday_dismissed' );
+		wp_redirect( admin_url( 'admin.php?page=wp-accessibility' ) );
+		exit;
+	}
+}
+add_action( 'admin_init', 'wpa_admin_init' );
+
 /**
  * Display notice in Playground for demo purposes.
  */
 function wpa_status_notice() {
+	global $current_screen;
 	// Only shown when in the Playground preview.
 	if ( 'true' === get_option( 'wpa_show_playground_intro', '' ) ) {
 		echo '<div class="notice notice-info">';
@@ -75,7 +92,39 @@ function wpa_status_notice() {
 		echo '<p>' . sprintf( __( 'To learn more, check out the <a href="%s">plugin documentation</a>.', 'wp-accessibility' ), 'https://docs.joedolson.com/wp-accessibility/' ) . '</p>';
 		echo '</div>';
 	}
+	// This could leak to other screens, but they would all be relevant.
+	if ( ! str_contains( $current_screen->id, 'wp-accessibility' ) ) {
+		return;
+	}
+	$dismissed      = get_option( 'wpa11yday_dismissed', false );
+	$dismissed_once = get_transient( 'wpa11yday_dismissed' );
+	if ( $dismissed ) {
+		return;
+	}
+	// Date promo stops being shown.
+	$wpa11yday_end_date = strtotime( '2026-10-08 16:00 UTC' );
+	// Date promo starts being shown.
+	$wpa11yday_start_date = strtotime( '2026-09-26 16:00 UTC' );
+	if ( ! $dismissed_once && time() <= $wpa11yday_end_date && time() >= $wpa11yday_start_date ) {
+		$dismiss_once        = '<a href="' . esc_url( admin_url( 'admin.php?page=wp-accessibility&action=wpa_dismiss_once' ) ) . '" class="button button-primary">' . __( 'Dismiss for 2026', 'wp-accessibility' ) . '</a>';
+		$dismiss_permanently = '<a href="' . esc_url( admin_url( 'admin.php?page=wp-accessibility&action=wpa_dismiss_permanently' ) ) . '" class="button button-secondary">' . __( 'Dismiss forever', 'wp-accessibility' ) . '</a>';
+
+		$notice = sprintf(
+		__(
+			'%1$s <span>The biggest WordPress Accessibility event of the year starts October 7th. <a href="%2$s">Check out the full schedule</a>!</span>', 'wp-accessibility' ),
+			'<img src="' . esc_url( plugin_dir_url( __FILE__ ) . 'imgs/wpa11yday-2026.png' ) . '" alt="WP Accessibility Day 2026">',
+			'https://wpaccessibility.day/2026/schedule/?utm_source=wp-accessibility&utm_medium=software',
+		);
+		wp_admin_notice(
+			$notice . '<div class="dismiss-buttons">' . $dismiss_once . $dismiss_permanently . '</div>',
+			array(
+				'type'               => 'info',
+				'additional_classes' => array( 'wpa11yday-notice' ),
+			)
+		);
+	}
 }
+add_action( 'admin_notices', 'wpa_status_notice', 10 );
 
 add_action( 'admin_menu', 'wpa_admin_menu' );
 /**

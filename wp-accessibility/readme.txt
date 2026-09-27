@@ -2,10 +2,10 @@
 Contributors: joedolson
 Donate link: https://www.joedolson.com/donate/
 Tags: accessibility, wcag, a11y, section508, alt text
-Requires at least: 5.9
+Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.3.5
+Stable tag: 2.4.0
 Text Domain: wp-accessibility
 License: GPLv2
 
@@ -82,6 +82,13 @@ WP Accessibility includes a statistics collection feature to help you identify h
 = Future =
 
 [Suggest a change!](https://github.com/joedolson/wp-accessibility/issues/)
+
+= 2.4.0 =
+
+* Change: Refactor font resizing to be JS based, resizing all text elements equivalently.
+* Remove existing font resizing styles.
+* Retain fallback for custom font resizing stylesheets, if present.
+* Add promotional notice for WordPress Accessibility Day.
 
 = 2.3.5 =
 
