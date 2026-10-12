@@ -10,14 +10,14 @@
  * @wordpress-plugin
  * Plugin Name: WP Accessibility
  * Plugin URI: https://www.joedolson.com/wp-accessibility/
- * Description: Helps improve accessibility in your WordPress site, like removing title attributes.
+ * Description: Adds practical accessibility fixes and tools, including skip links, focus states, image alt checks, and other useful accessibility fixes.
  * Author: Joe Dolson
  * Author URI: https://www.joedolson.com/
  * Text Domain: wp-accessibility
  * Domain Path: /lang
  * License:     GPL-2.0+
  * License URI: http://www.gnu.org/license/gpl-2.0.txt
- * Version: 2.4.2
+ * Version: 2.4.3
  */
 
 /*
@@ -52,7 +52,7 @@ if ( 'off' !== get_option( 'wpa_track_stats' ) ) {
 	require_once __DIR__ . '/wp-accessibility-stats.php';
 }
 
-define( 'WP_ACCESSIBILITY_VERSION', '2.4.2' );
+define( 'WP_ACCESSIBILITY_VERSION', '2.4.3' );
 
 register_activation_hook( __FILE__, 'wpa_install' );
 
@@ -674,7 +674,7 @@ if ( 'on' === get_option( 'wpa_search' ) ) {
  */
 function wpa_filter( $query ) {
 	if ( ! is_admin() ) {
-		if ( isset( $_GET['s'] ) && '' === trim( $_GET['s'] ) && ( $query->is_main_query() ) ) {
+		if ( isset( $_GET['s'] ) && '' === trim( (string) $_GET['s'] ) && ( $query->is_main_query() ) ) {
 			$query->query_vars['s'] = '&#32;';
 			$query->set( 'is_search', 1 );
 			add_action( 'template_include', 'wpa_search_error' );
