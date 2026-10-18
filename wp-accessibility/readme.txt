@@ -5,7 +5,7 @@ Tags: accessibility, wcag, a11y, section508, alt text
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.4.3
+Stable tag: 2.4.4
 Text Domain: wp-accessibility
 License: GPLv2
 
@@ -87,6 +87,15 @@ WP Accessibility includes a statistics collection feature to help you identify h
 = Future =
 
 [Suggest a change!](https://github.com/joedolson/wp-accessibility/issues/)
+
+= 2.4.4 =
+
+* Security: Fix potential disclosure of private data via the `longdesc` parameter.
+* Bug fix: Color contrast form target wrong admin page.
+* Bug fix: Remove extraneous 'p' parameter on longdesc targets.
+* Bug fix: Get post ID from parent `article` if not on img.
+* Change: Improve `title` element on longdesc target page.
+* Updates & hardening to meet current WordPress plugin standards.
 
 = 2.4.3 =
 
